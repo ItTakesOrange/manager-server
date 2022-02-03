@@ -8,6 +8,7 @@ const logger = require('koa-logger')
 const log4js = require('./utils/log4j')
 const users = require('./routes/users')
 const router = require('koa-router')()
+const jwt = require('jsonwebtoken')
 
 require('./config/db')
 
@@ -34,6 +35,13 @@ app.use(async (ctx, next) => {
 })
 
 router.prefix('/api')
+
+router.get('/leave/count', (ctx) => {
+  console.log('=>', ctx.request.headers)
+  const token = ctx.headers.authorization.split(' ')[1]
+  const payload = jwt.verify(token, 'manager')
+  ctx.body = payload
+})
 
 router.use(users.routes(), users.allowedMethods())
 app.use(router.routes(), router.allowedMethods())
