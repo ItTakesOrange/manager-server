@@ -1,5 +1,6 @@
 const router = require('koa-router')()
 const User = require('../models/userSchema')
+const Counter = require('../models/counterSchema')
 const util = require('../utils/util')
 const jwt = require('jsonwebtoken')
 
@@ -70,6 +71,53 @@ router.post('/delete', async (ctx) => {
     return
   }
   ctx.body = util.fail('删除失败')
+})
+
+router.post('/operate', async (ctx) => {
+  const { userId, userName, userEmail, mobile, job, state, roleList, deptId, action } = ctx.request.body
+  if (action === 'add') {
+    // 新增用户
+    if (!userName || !userEmail || !deptId) {
+      ctx.body = util.fail('参数错误', util.CODE.PARAM_ERROR)
+      return
+    }
+    const res = await User.findOne({ $or: [{ userName }, { userEmail }] }, '_id userName userEmail')
+    if (res) {
+      ctx.body = util.fail(`有重复的用户，信息如下：${userName} - ${userEmail}`)
+    } else {
+      const doc = await Counter.findOneAndUpdate({ _id: 'userId' }, { $inc: { sequence_value: 1 } }, { new: true })
+      try {
+        const user = new User({
+          userId: doc.sequence_value,
+          userName,
+          userPwd: '123456',
+          userEmail,
+          role: 1, // 默认普通用户
+          mobile,
+          job,
+          state,
+          roleList,
+          deptId
+        })
+        user.save()
+        ctx.body = util.success('', '用户创建成功')
+      } catch (error) {
+        ctx.body = util.fail(error.stack, '用户创建失败')
+      }
+    }
+  } else {
+    // 更新用户
+    if (!deptId) {
+      ctx.body = util.fail('部门不能为空', util.CODE.PARAM_ERROR)
+      return
+    }
+    try {
+      const res = await User.findOneAndUpdate({ userId }, { mobile, job, state, roleList, deptId })
+      ctx.body = util.success({}, '更新成功')
+    } catch (error) {
+      ctx.body = util.fail(`更新失败${error.stack}`)
+    }
+  }
 })
 
 module.exports = router
