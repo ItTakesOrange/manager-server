@@ -3,6 +3,7 @@ const User = require('../models/userSchema')
 const Counter = require('../models/counterSchema')
 const util = require('../utils/util')
 const jwt = require('jsonwebtoken')
+const md5 = require('md5')
 
 router.prefix('/users')
 
@@ -17,7 +18,7 @@ router.post('/login', async (ctx) => {
      */
     const res = await User.findOne({
       userName,
-      userPwd
+      userPwd: md5(userPwd)
     }, 'userId userName userEmail state role deptId roleList')
 
     if (res) {
@@ -90,7 +91,7 @@ router.post('/operate', async (ctx) => {
         const user = new User({
           userId: doc.sequence_value,
           userName,
-          userPwd: '123456',
+          userPwd: md5('123456'),
           userEmail,
           role: 1, // 默认普通用户
           mobile,
