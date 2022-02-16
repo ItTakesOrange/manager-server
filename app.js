@@ -11,6 +11,7 @@ const koajwt = require('koa-jwt')
 const util = require('./utils/util')
 const users = require('./routes/users')
 const menus = require('./routes/menus')
+const roles = require('./routes/roles')
 
 require('./config/db')
 
@@ -51,6 +52,7 @@ router.prefix('/api')
 
 router.use(users.routes(), users.allowedMethods())
 router.use(menus.routes(), menus.allowedMethods())
+router.use(roles.routes(), menus.allowedMethods())
 
 app.use(router.routes(), router.allowedMethods())
 
