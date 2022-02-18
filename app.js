@@ -12,6 +12,7 @@ const util = require('./utils/util')
 const users = require('./routes/users')
 const menus = require('./routes/menus')
 const roles = require('./routes/roles')
+const depts = require('./routes/depts')
 
 require('./config/db')
 
@@ -52,7 +53,8 @@ router.prefix('/api')
 
 router.use(users.routes(), users.allowedMethods())
 router.use(menus.routes(), menus.allowedMethods())
-router.use(roles.routes(), menus.allowedMethods())
+router.use(roles.routes(), roles.allowedMethods())
+router.use(depts.routes(), depts.allowedMethods())
 
 app.use(router.routes(), router.allowedMethods())
 
