@@ -63,6 +63,15 @@ router.get('/list', async (ctx) => {
   }
 })
 
+router.get('/all/list', async (ctx) => {
+  try {
+    const list = await User.find({}, 'userId userName userEmail')
+    ctx.body = util.success(list)
+  } catch (error) {
+    ctx.body = util.fail(error.stack)
+  }
+})
+
 router.post('/delete', async (ctx) => {
   const { userIds } = ctx.request.body
   // User.updateMany({ $or: [{ userId: 10001 }, { userId: 10002 }] })
