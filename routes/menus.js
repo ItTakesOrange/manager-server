@@ -11,29 +11,9 @@ router.get('/list', async (ctx) => {
   if (menuName) params.menuName = menuName
   if (menuState) params.menuState = menuState
   const rootList = await Menu.find(params) || []
-  const permissionList = getTreeMenu(rootList, null, [])
+  const permissionList = util.getTreeMenu(rootList, null, [])
   ctx.body = util.success(permissionList, '成功')
 })
-
-function getTreeMenu(rootList, id, list) {
-  for(let i = 0; i < rootList.length; i++) {
-    const item = rootList[i]
-    if (String(item.parentId.slice().pop()) === String(id)) {
-      list.push(item._doc)
-    }
-  }
-  list.forEach(item => {
-    item.children = []
-    getTreeMenu(rootList, item._id, item.children)
-    if (item.children.length === 0) {
-      delete item.children
-    } else if (item.children.length > 0 && item.children[0].menuType === 2) {
-      // 快速区分菜单和按钮，用于后期做菜单按钮权限控制
-      item.action = item.children
-    }
-  })
-  return list
-}
 
 // 菜单编辑、删除、新增功能
 router.post('/operate', async (ctx) => {
