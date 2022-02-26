@@ -13,10 +13,10 @@ router.get('/list', async (ctx) => {
     let { data } = util.decoded(authorization)
     let params = {}
     if (type === 'approve') {
-      if (applyState === 1) {
+      if (applyState == 1 || applyState == 2) {
         params.curAuditUserName = data.userName
-        params.applyState = 1
-      } else if (applyState > 1) {
+        params.$or = [{ applyState: 1 }, { applyState: 2 }]
+      } else if (applyState > 2) {
         params = { 'auditFlows.userId': data.userId, applyState }
       } else {
         params = { 'auditFlows.userId': data.userId }
@@ -25,8 +25,8 @@ router.get('/list', async (ctx) => {
       params = {
         'applyUser.userId': data.userId
       }
+      if (applyState) params.applyState = applyState
     }
-    if (applyState) params.applyState = applyState
     const query = Leave.find(params)
     const list = await query.skip(skipIndex).limit(page.pageSize)
     const total = await Leave.countDocuments(params)
@@ -91,6 +91,44 @@ router.post('/operate', async (ctx) => {
       await Leave.findByIdAndUpdate(_id, { applyState: 5 })
       ctx.body = util.success('', '删除成功')
     }
+  } catch (error) {
+    ctx.body = util.fail(`查询失败: ${error.stack}`)
+  }
+})
+
+router.post('/approve', async (ctx) => {
+  try {
+    const { _id, action, remark } = ctx.request.body
+    const authorization = ctx.request.headers.authorization
+    const { data } = util.decoded(authorization)
+    let params = {}
+    // 1:待审批 2:审批中 3:审批拒绝 4:审批通过 5:作废
+    let doc = await Leave.findById(_id)
+    let auditLogs = doc.auditLogs || []
+    if (action === 'refuse') {
+      params.applyState = 3
+    } else {
+      if (doc.auditFlows.length === doc.auditLogs.length) {
+        ctx.body = util.success('', '当前申请单已处理，请勿重复提交')
+        return
+      } else if (doc.auditFlows.length === doc.auditLogs.length + 1) {
+        // 最后一个审批人
+        params.applyState = 4
+      } else if (doc.auditFlows.length > doc.auditLogs.length) {
+        params.applyState = 2
+        params.curAuditUserName = doc.auditFlows[doc.auditLogs.length + 1].userName
+      }
+      auditLogs.push({
+        userId: data.userId,
+        userName: data.userName,
+        createTime: new Date(),
+        remark,
+        action: action === 'refuse' ? '审批拒绝' : '审批通过'
+      })
+    }
+    params.auditLogs = auditLogs
+    await Leave.findByIdAndUpdate(_id, params)
+    ctx.body = util.success('', '处理成功')
   } catch (error) {
     ctx.body = util.fail(`查询失败: ${error.stack}`)
   }
