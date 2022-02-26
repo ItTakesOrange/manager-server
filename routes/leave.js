@@ -42,6 +42,20 @@ router.get('/list', async (ctx) => {
   }
 })
 
+router.get('/count', async (ctx) => {
+  try {
+    const authorization = ctx.request.headers.authorization
+    let { data } = util.decoded(authorization)
+    let params = {}
+    params.curAuditUserName = data.userName
+    params.$or = [{ applyState: 1 }, { applyState: 2 }]
+    const count = await Leave.countDocuments(params)
+    ctx.body = util.success(count)
+  } catch (error) {
+    ctx.body = util.fail(`查询失败: ${error.stack}`)
+  }
+})
+
 router.post('/operate', async (ctx) => {
   try {
     const { _id, action, ...params } = ctx.request.body
